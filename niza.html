@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nuestra Historia | Rodrigo y Niza</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+    <style>
+        :root {
+            --rose-50: #fff1f2;
+            --rose-100: #ffe4e6;
+            --rose-200: #fecdd3;
+            --rose-400: #fb7185;
+            --rose-500: #f43f5e;
+            --rose-600: #e11d48;
+            --rose-700: #be123c;
+            --pink-900: #4c0519;
+            --slate-900: #0f172a;
+            --slate-700: #334155;
+            --stone-200: #e7e5e4;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(251, 113, 133, 0.28), transparent 25%),
+                radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.2), transparent 20%),
+                linear-gradient(135deg, #fff8f9 0%, #fff1f2 38%, #fdf2f8 100%);
+            color: var(--slate-900);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body.letter-closed {
+            overflow: hidden;
+        }
+
+        .letter-cover {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            overflow: auto;
+            padding: 2rem 1.25rem;
+            background:
+                radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.28), transparent 22%),
+                radial-gradient(circle at 85% 85%, rgba(251, 113, 133, 0.28), transparent 25%),
+                linear-gradient(135deg, #9f1239, #be123c 48%, #831843);
+            transition: opacity 0.7s ease, visibility 0.7s ease;
+        }
+
+        .letter-cover.is-open {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .letter-intro {
+            width: min(100%, 430px);
+            text-align: center;
+            color: white;
+            animation: letter-rise 0.8s ease both;
+        }
+
+        .letter-art {
+            position: relative;
+            width: min(100%, 360px);
+            aspect-ratio: 1.35;
+            margin: 0 auto 2rem;
+            filter: drop-shadow(0 24px 28px rgba(76, 5, 25, 0.3));
+        }
+
+        .envelope {
+            position: absolute;
+            inset: 14% 0 0;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            background: #fecdd3;
+            box-shadow: inset 0 -14px 0 rgba(190, 24, 93, 0.12);
+        }
+
+        .envelope::before,
+        .envelope::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            width: 72%;
+            height: 78%;
+            background: #fda4af;
+        }
+
+        .envelope::before {
+            left: -7%;
+            clip-path: polygon(0 100%, 100% 0, 100% 100%);
+        }
+
+        .envelope::after {
+            right: -7%;
+            clip-path: polygon(0 0, 100% 100%, 0 100%);
+        }
+
+        .letter-paper {
+            position: absolute;
+            z-index: 2;
+            top: -2%;
+            left: 11%;
+            width: 78%;
+            height: 78%;
+            padding: 1.2rem 1rem;
+            border-radius: 0.35rem;
+            background: #fffaf5;
+            color: #9f1239;
+            transform: rotate(-3deg);
+            box-shadow: 0 7px 12px rgba(76, 5, 25, 0.18);
+        }
+
+        .letter-paper strong {
+            display: block;
+            font-family: Georgia, serif;
+            font-size: clamp(1.35rem, 5vw, 1.8rem);
+        }
+
+        .letter-paper span {
+            display: block;
+            margin-top: 0.65rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .wax-seal {
+            position: absolute;
+            z-index: 3;
+            bottom: 13%;
+            left: 50%;
+            display: grid;
+            width: 3.5rem;
+            height: 3.5rem;
+            place-items: center;
+            border: 3px solid #fda4af;
+            border-radius: 999px;
+            background: #be123c;
+            color: #ffe4e6;
+            font-family: Georgia, serif;
+            font-size: 1.5rem;
+            transform: translateX(-50%);
+            box-shadow: 0 5px 10px rgba(76, 5, 25, 0.2);
+        }
+
+        .letter-intro h1 {
+            font-family: Georgia, serif;
+            font-size: clamp(2rem, 8vw, 3rem);
+            font-weight: 700;
+        }
+
+        .letter-intro p {
+            margin-top: 0.5rem;
+            color: #ffe4e6;
+        }
+
+        .open-letter-button {
+            margin-top: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 999px;
+            padding: 0.85rem 1.6rem;
+            background: white;
+            color: #be123c;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(76, 5, 25, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .open-letter-button:hover,
+        .open-letter-button:focus-visible {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px rgba(76, 5, 25, 0.3);
+        }
+
+        @keyframes letter-rise {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hero-pattern {
+            background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 20%),
+                              radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 20%),
+                              radial-gradient(circle at 50% 100%, rgba(244,114,182,0.25), transparent 30%);
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 1.15rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #fda4af, #fb7185, #f472b6);
+        }
+
+        @media (min-width: 768px) {
+            .timeline::before {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        .story-card {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .story-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 35px rgba(190, 24, 93, 0.12);
+        }
+
+        .story-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(251, 113, 133, 0.08), transparent 50%);
+            pointer-events: none;
+        }
+
+        #map {
+            height: 430px;
+            border-radius: 1.25rem;
+            z-index: 10;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .swiper {
+            width: 100%;
+            height: clamp(520px, 72vh, 760px);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 22px 40px rgba(190, 24, 93, 0.15);
+        }
+
+        .swiper-slide {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #fdf2f8;
+        }
+
+        .swiper-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        @media (max-width: 640px) {
+            .swiper {
+                height: min(78vh, 680px);
+            }
+        }
+
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: white;
+            background: rgba(190, 24, 93, 0.45);
+            width: 44px;
+            height: 44px;
+            border-radius: 9999px;
+            backdrop-filter: blur(6px);
+        }
+
+        .swiper-button-next:after,
+        .swiper-button-prev:after {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .swiper-pagination-bullet {
+            background: rgba(255,255,255,0.9);
+            opacity: 0.7;
+        }
+
+        .swiper-pagination-bullet-active {
+            background: #f43f5e;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="antialiased letter-closed">
+    <section class="letter-cover" id="letter-cover" aria-label="Carta de bienvenida">
+        <div class="letter-intro">
+            <div class="letter-art" aria-hidden="true">
+                <div class="letter-paper">
+                    <strong>Para Niza</strong>
+                    <span>Con todo mi amor</span>
+                </div>
+                <div class="envelope"></div>
+                <div class="wax-seal">R</div>
+            </div>
+            <h1>Una carta para ti</h1>
+            <p>Dentro hay una historia hecha de momentos, detalles y mucho amor.</p>
+            <button class="open-letter-button" id="open-letter" type="button">Abrir carta</button>
+        </div>
+    </section>
+
+    <header class="hero-pattern relative overflow-hidden text-white">
+        <div class="absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-600 to-rose-800 opacity-95"></div>
+        <div class="relative mx-auto max-w-6xl px-6 py-20 sm:py-24">
+            <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium tracking-wide text-rose-50 backdrop-blur-sm">
+                <span class="h-2.5 w-2.5 rounded-full bg-pink-200 shadow-[0_0_15px_rgba(255,255,255,0.7)]"></span>
+                Amor, recuerdos y momentos
+            </div>
+            <h1 class="text-4xl font-black tracking-tight sm:text-5xl lg:text-7xl">Nuestra Historia</h1>
+            <p class="mt-4 text-lg text-rose-100 sm:text-2xl">Rodrigo y Niza</p>
+            <p class="mt-6 max-w-2xl text-base text-rose-50/90 sm:text-lg">
+                Un viaje lleno de risas, conversaciones, paseos y recuerdos que nos ayudaron a escribir algo hermoso juntos.
+            </p>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl space-y-20 px-5 py-14 sm:px-6 lg:py-20">
+        <section class="glass rounded-[2rem] border border-rose-100 p-6 shadow-[0_20px_45px_rgba(190,24,93,0.08)] md:p-10">
+            <div class="grid items-center gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+                <div>
+                    <p class="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-rose-500">Nuestra historia</p>
+                    <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">Cada detalle comenzó con una conexión especial.</h2>
+                    <p class="mt-5 text-lg leading-relaxed text-slate-700">
+                        Lo que comenzó como un momento casual se convirtió en una historia hermosa, llena de complicidad, cariño y muchos recuerdos que todavía siguen creciendo.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <span class="rounded-full bg-rose-100 px-4 py-2 text-sm font-medium text-rose-700">Amor</span>
+                        <span class="rounded-full bg-pink-100 px-4 py-2 text-sm font-medium text-pink-700">Compromiso</span>
+                        <span class="rounded-full bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600">Memorias</span>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-rose-200 via-pink-200 to-rose-100 blur-xl opacity-80"></div>
+                    <div class="relative overflow-hidden rounded-[2rem] border border-rose-100 bg-white p-4 shadow-xl">
+                        <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=900&q=80" alt="Pareja disfrutando juntos" class="h-[420px] w-full rounded-[1.5rem] object-cover" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="mb-10 text-center">
+                <p class="text-sm font-semibold uppercase tracking-[0.22em] text-rose-500">Línea del tiempo</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Cómo comenzó todo</h2>
+            </div>
+
+            <div class="timeline relative space-y-8 md:space-y-10">
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">18 de enero</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Básquetbol y libros</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        Un día que comenzó con energía, risas y una amistad que se volvió algo mucho más bonito. Entre balones, conversaciones y la librería, empezó a florecer algo real.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-auto md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-pink-500 shadow-lg md:left-auto md:left-[-2.9rem] md:right-auto">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-pink-700">3 de abril</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Nuestro primer viaje juntos</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        El 3 de abril de 2026 vivimos nuestro primer viaje juntos en un tour de tequila por Jalisco, creando recuerdos nuevos lejos de nuestra rutina.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">24 de mayo</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Un día en el zoológico</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        El 24 de mayo de 2026 fuimos juntos al Zoológico Guadalajara y compartimos un día lleno de animales, paseos y momentos especiales.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-auto md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-pink-500 shadow-lg md:left-auto md:left-[-2.9rem] md:right-auto">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-pink-700">31 de mayo</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Rayarnos la cara con tu labial</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        El 31 de mayo nos rayamos la cara con tu labial. Fue tan divertido que terminó convirtiéndose en uno de esos recuerdos que todavía nos hacen sonreír.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">14 de junio</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Caminata por Zapopan</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        Fuimos a Zapopan Centro a caminar y a comer elote juntos, disfrutando de una tarde sencilla, bonita y muy nuestra.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-auto md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-pink-500 shadow-lg md:left-auto md:left-[-2.9rem] md:right-auto">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-pink-700">18 de junio</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Nuestro primer partido del Mundial</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        Vimos nuestro primer partido del Mundial. Yo estaba tan emocionado y, a la vez, nervioso; fue una experiencia que vivimos juntos y que no voy a olvidar.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">28 de junio</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">El osito de Ronaldo</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        Me regalaste un osito con la camisa de Ronaldo. Fue un detalle tan lindo que se quedó guardado como uno de mis regalos favoritos. Te amo.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-auto md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-pink-500 shadow-lg md:left-auto md:left-[-2.9rem] md:right-auto">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-pink-700">8 de febrero</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Las papas del amor</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        En el Sam's Club del ITESO ordenamos dos hamburguesas y unas papas con queso. Sin que tu me lo pidieras, te di mis papas: un detalle pequeño que se convirtió en un recuerdo enorme.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">22 de marzo</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Nuestro primer beso</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        En la parada del puente blanco en un dia lluvioso, en Centro Sur, compartimos nuestro primer beso. Guarda desde entonces uno de nuestros recuerdos más importantes.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-auto md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-pink-500 shadow-lg md:left-auto md:left-[-2.9rem] md:right-auto">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-pink-700">20 de enero</span>
+                        <span class="text-sm font-medium text-slate-500">2026</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">El jardín japonés</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        La caminata más bonita del mundo: naturaleza, pláticas largas y un momento que se sintió inevitable. Ahí nació un recuerdo que aún sigue vivo en nosotros.
+                    </p>
+                </article>
+
+                <article class="story-card glass ml-12 rounded-2xl border border-rose-100 p-5 shadow-lg md:ml-0 md:w-[calc(50%-2rem)] md:pr-7 md:pl-7">
+                    <div class="absolute left-[-2.9rem] top-7 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-lg md:left-auto md:right-[-2.9rem]">
+                        <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+                    </div>
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-rose-700">Momentos especiales</span>
+                        <span class="text-sm font-medium text-slate-500">Siempre</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">La esencia de nosotros</h3>
+                    <p class="mt-2 leading-relaxed text-slate-700">
+                        Desde entonces cada encuentro, cada detalle y cada sonrisa se convirtió en parte de una historia que solo crece con el paso del tiempo.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="rounded-[2rem] border border-rose-100 bg-white/70 p-6 shadow-[0_20px_45px_rgba(190,24,93,0.08)] md:p-10">
+            <div class="mb-8 text-center">
+                <p class="text-sm font-semibold uppercase tracking-[0.22em] text-rose-500">Nuestros lugares</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Lugares que marcaron nuestra historia</h2>
+            </div>
+            <div id="map" aria-label="Mapa con lugares de la historia"></div>
+        </section>
+
+        <section class="rounded-[2rem] border border-rose-100 bg-white/80 p-6 shadow-[0_20px_45px_rgba(190,24,93,0.08)] md:p-10">
+            <div class="mb-8 text-center">
+                <p class="text-sm font-semibold uppercase tracking-[0.22em] text-rose-500">Galería</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Momentos que valen la pena recordar</h2>
+            </div>
+
+            <div class="swiper mySwiper" aria-label="Carrusel de fotos de la historia">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <img src="WhatsApp Image 2026-09-11 at 1.43.40 AM.jpeg" alt="Foto 1" />
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="WhatsApp Image 2026-09-11 at 1.43.40 AM (1).jpeg" alt="Foto 2" />
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="WhatsApp Image 2026-09-11 at 1.43.38 AM.jpeg" alt="Foto 3" />
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="WhatsApp Image 2026-09-11 at 1.43.39 AM.jpeg" alt="Foto 4" />
+                    </div>
+                </div>
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </section>
+
+        <section class="rounded-[2rem] bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 p-8 text-center text-white shadow-[0_25px_50px_rgba(190,24,93,0.25)] md:p-12">
+            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-rose-100">Mi frase</p>
+            <blockquote class="mx-auto mt-4 max-w-3xl text-2xl font-medium leading-relaxed sm:text-3xl">
+                “Poco a poco te das cuenta de que el mejor lujo de la vida es tener una mente tranquila, amar de la manera mas noble y saber valorar el tiempo.”
+            </blockquote>
+        </section>
+    </main>
+
+    <footer class="border-t border-rose-100 bg-white/70 py-8 text-center text-slate-700">
+        <p class="text-lg font-medium">Hecho con mucho amor para mi futura prometida</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+        const letterCover = document.getElementById('letter-cover');
+        const openLetterButton = document.getElementById('open-letter');
+
+        openLetterButton.addEventListener('click', () => {
+            letterCover.classList.add('is-open');
+            document.body.classList.remove('letter-closed');
+        });
+
+        const map = L.map('map').setView([20.7090, -103.3850], 13.5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const puntos = [
+            { coords: [20.7078, -103.3934], label: '18 enero · Partido de básquetbol en Colomos' },
+            { coords: [20.7115, -103.3768], label: '18 enero · Librería Gonvill en Plaza Patria' },
+            { coords: [20.7085, -103.3945], label: '20 enero · Jardín japonés y caminata' },
+            { coords: [20.6106, -103.4138], label: "8 febrero · Las papas del amor" },
+            { coords: [20.606649, -103.402284], label: '22 marzo · Primer beso' },
+            { coords: [20.8823, -103.8367], label: '3 abril · Primer viaje juntos: tour de tequila en Tequila, Jalisco' },
+            { coords: [20.7350, -103.3110], label: '24 mayo · Zoológico Guadalajara' },
+            { coords: [20.7208, -103.3927], label: '14 junio · Caminata y elote en Zapopan Centro' }
+        ];
+
+        puntos.forEach((punto) => {
+            const marker = L.marker(punto.coords).addTo(map);
+            marker.bindPopup(punto.label);
+        });
+
+        const swiper = new Swiper('.mySwiper', {
+            loop: true,
+            speed: 700,
+            autoplay: {
+                delay: 3200,
+                disableOnInteraction: false
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev'
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true
+            }
+        });
+    </script>
+</body>
+</html>
